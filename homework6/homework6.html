@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>归并排序可视化</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 40px 20px;
+}
+.wrapper {
+    max-width: 720px;
+    margin: 0 auto;
+    background: #ffffff;
+    padding: 32px;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+}
+h2 {
+    color: #333;
+    margin-bottom: 8px;
+    font-size: 26px;
+}
+.subtitle {
+    color: #888;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+.input-group {
+    margin-bottom: 16px;
+}
+.input-group label {
+    display: block;
+    color: #555;
+    font-size: 14px;
+    margin-bottom: 6px;
+    font-weight: 600;
+}
+#numInput {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 15px;
+    transition: border-color 0.3s;
+}
+#numInput:focus {
+    outline: none;
+    border-color: #667eea;
+}
+.btn-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+.btn-primary {
+    background: #667eea;
+    color: #fff;
+}
+.btn-primary:hover {
+    background: #5a6fd6;
+    transform: translateY(-2px);
+}
+.btn-secondary {
+    background: #f0f0f0;
+    color: #555;
+}
+.btn-secondary:hover {
+    background: #e0e0e0;
+    transform: translateY(-2px);
+}
+.result-box {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 20px;
+    border-left: 4px solid #667eea;
+}
+.result-box h3 {
+    color: #333;
+    font-size: 18px;
+    margin-bottom: 12px;
+}
+.result-line {
+    color: #555;
+    font-size: 15px;
+    line-height: 1.8;
+    font-family: 'Consolas', monospace;
+}
+.result-line .label {
+    color: #667eea;
+    font-weight: 600;
+}
+.error-msg {
+    color: #e74c3c;
+    font-size: 14px;
+    margin-top: 8px;
+}
+</style>
+<base target="_blank">
+</head>
+<body>
+<div class="wrapper">
+    <h2>归并排序（Merge Sort）</h2>
+    <p class="subtitle">分治法经典应用：将数组不断二分，再逐层合并有序子数组</p>
+
+    <div class="input-group">
+        <label for="numInput">请输入整数序列（用英文逗号分隔）</label>
+        <input id="numInput" value="5,3,8,1,9,2" placeholder="例如：5,3,8,1,9,2">
+    </div>
+
+    <div class="btn-row">
+        <button class="btn btn-primary" onclick="executeSort()">开始排序</button>
+        <button class="btn btn-secondary" onclick="generateRandom()">随机生成</button>
+    </div>
+
+    <div class="result-box">
+        <h3>排序结果</h3>
+        <div id="outputArea">
+            <p class="result-line">点击"开始排序"查看结果...</p>
+        </div>
+    </div>
+</div>
+
+<script>
+/**
+ * 合并两个有序数组
+ * @param {number[]} left - 左半部分有序数组
+ * @param {number[]} right - 右半部分有序数组
+ * @returns {number[]} 合并后的有序数组
+ */
+function mergeTwoSorted(left, right) {
+    const merged = [];
+    let i = 0, j = 0;
+
+    while (i < left.length && j < right.length) {
+        if (left[i] <= right[j]) {
+            merged.push(left[i]);
+            i++;
+        } else {
+            merged.push(right[j]);
+            j++;
+        }
+    }
+
+    // 拼接剩余元素
+    while (i < left.length) { merged.push(left[i]); i++; }
+    while (j < right.length) { merged.push(right[j]); j++; }
+
+    return merged;
+}
+
+/**
+ * 归并排序主函数（递归实现）
+ * @param {number[]} arr - 待排序数组
+ * @returns {number[]} 排序后的数组
+ */
+function mergeSortRecursive(arr) {
+    if (arr.length <= 1) {
+        return arr;
+    }
+
+    const center = Math.floor(arr.length / 2);
+    const leftPart = arr.slice(0, center);
+    const rightPart = arr.slice(center);
+
+    return mergeTwoSorted(
+        mergeSortRecursive(leftPart),
+        mergeSortRecursive(rightPart)
+    );
+}
+
+/**
+ * 执行排序并展示结果
+ */
+function executeSort() {
+    const rawText = document.getElementById("numInput").value.trim();
+    const outputArea = document.getElementById("outputArea");
+
+    if (!rawText) {
+        outputArea.innerHTML = '<p class="error-msg">请输入数据后再排序</p>';
+        return;
+    }
+
+    const numList = rawText.split(",").map(s => Number(s.trim()));
+    if (numList.some(isNaN)) {
+        outputArea.innerHTML = '<p class="error-msg">输入包含非法字符，请确保全是整数</p>';
+        return;
+    }
+
+    const original = numList.slice();
+    const sorted = mergeSortRecursive(numList.slice());
+
+    outputArea.innerHTML =
+        '<p class="result-line"><span class="label">原数组：</span>[' + original.join(", ") + ']</p>' +
+        '<p class="result-line"><span class="label">排序后：</span>[' + sorted.join(", ") + ']</p>' +
+        '<p class="result-line" style="margin-top:12px;color:#888;font-size:13px;">' +
+        '数组长度：' + original.length + ' | 比较次数：约 ' + (original.length * Math.ceil(Math.log2(original.length + 1))) + ' 次</p>';
+}
+
+/**
+ * 生成随机测试数据
+ */
+function generateRandom() {
+    const randomArr = [];
+    const count = 8 + Math.floor(Math.random() * 5); // 8~12个
+    for (let k = 0; k < count; k++) {
+        randomArr.push(Math.floor(Math.random() * 200) - 100); // -100~99
+    }
+    document.getElementById("numInput").value = randomArr.join(",");
+    executeSort();
+}
+
+// 页面加载后自动执行一次
+document.addEventListener("DOMContentLoaded", executeSort);
+</script>
+</body>
+</html>
