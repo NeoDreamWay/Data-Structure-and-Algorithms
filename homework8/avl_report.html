@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>AVL树构建与旋转实操报告</title>
+    <style>
+        body { font-family: 'Microsoft YaHei', Arial, sans-serif; max-width: 1000px; margin: 0 auto; padding: 20px; background: #f5f5f5; }
+        h1 { color: #333; text-align: center; border-bottom: 3px solid #4CAF50; padding-bottom: 10px; }
+        h2 { color: #1565C0; margin-top: 30px; }
+        .step { background: white; border-radius: 10px; padding: 20px; margin: 20px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .step-header { font-size: 18px; font-weight: bold; color: #333; margin-bottom: 10px; }
+        .status { display: inline-block; padding: 4px 12px; border-radius: 15px; font-size: 14px; margin-left: 10px; }
+        .status-balanced { background: #4CAF50; color: white; }
+        .status-imbalance { background: #F44336; color: white; }
+        .tree-img { width: 100%; max-width: 700px; display: block; margin: 15px auto; border-radius: 8px; border: 1px solid #ddd; }
+        .info-box { background: #E3F2FD; border-left: 4px solid #2196F3; padding: 12px 15px; margin: 10px 0; border-radius: 4px; }
+        .rotate-box { background: #FFF3E0; border-left: 4px solid #FF9800; padding: 12px 15px; margin: 10px 0; border-radius: 4px; }
+        .final-box { background: #E8F5E9; border-left: 4px solid #4CAF50; padding: 15px; margin: 20px 0; border-radius: 4px; }
+        code { background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-family: Consolas, monospace; }
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+        th { background: #2196F3; color: white; }
+        tr:nth-child(even) { background: #f9f9f9; }
+        .legend { display: flex; gap: 20px; justify-content: center; margin: 15px 0; flex-wrap: wrap; }
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+        .color-box { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #333; }
+        .tree-ascii { font-family: Consolas, monospace; background: #f8f8f8; padding: 15px; border-radius: 8px; line-height: 1.6; }
+    </style>
+</head>
+<body>
+    <h1>AVL树构建与旋转实操报告</h1>
+
+    <div class="info-box">
+        <strong>插入序列：</strong><code>[30, 20, 10, 25, 40, 35, 50]</code><br>
+        <strong>目标：</strong>依次插入每个数，观察平衡因子变化，检测失衡并进行旋转调整
+    </div>
+
+    <div class="legend">
+        <div class="legend-item"><div class="color-box" style="background:#4CAF50;"></div>平衡 (bf=0)</div>
+        <div class="legend-item"><div class="color-box" style="background:#FF9800;"></div>临界 (bf=±1)</div>
+        <div class="legend-item"><div class="color-box" style="background:#F44336;"></div>失衡 (|bf|>1)</div>
+        <div class="legend-item"><div class="color-box" style="background:#FFEB3B;"></div>旋转轴节点</div>
+    </div>
+
+    <h2>构建过程总览</h2>
+    <table>
+        <tr><th>步骤</th><th>插入值</th><th>状态</th><th>失衡类型</th><th>旋转轴</th><th>中序遍历</th></tr>
+        <tr><td>1</td><td>30</td><td>平衡</td><td>-</td><td>-</td><td>[30]</td></tr>
+        <tr><td>2</td><td>20</td><td>平衡</td><td>-</td><td>-</td><td>[20, 30]</td></tr>
+        <tr style="background:#FFF3E0;"><td>3</td><td>10</td><td>失衡</td><td><strong>LL</strong></td><td>节点 30</td><td>[10, 20, 30]</td></tr>
+        <tr><td>4</td><td>25</td><td>平衡</td><td>-</td><td>-</td><td>[10, 20, 25, 30]</td></tr>
+        <tr><td>5</td><td>40</td><td>平衡</td><td>-</td><td>-</td><td>[10, 20, 25, 30, 40]</td></tr>
+        <tr style="background:#FFF3E0;"><td>6</td><td>35</td><td>失衡</td><td><strong>RL</strong></td><td>节点 20</td><td>[10, 20, 25, 30, 35, 40]</td></tr>
+        <tr><td>7</td><td>50</td><td>平衡</td><td>-</td><td>-</td><td>[10, 20, 25, 30, 35, 40, 50]</td></tr>
+    </table>
+
+    <h2>详细步骤分析</h2>
+
+    <div class="step">
+        <div class="step-header">第1步：插入 30 <span class="status status-balanced">平衡</span></div>
+        <div class="info-box">空树插入第一个节点，平衡因子 bf = 0</div>
+        <img class="tree-img" src="avl_step_1_insert_30.png" alt="插入30">
+    </div>
+
+    <div class="step">
+        <div class="step-header">第2步：插入 20 <span class="status status-balanced">平衡</span></div>
+        <div class="info-box">20 &lt; 30，作为左子节点。节点30的 bf = 1（左高1，右高0），未失衡</div>
+        <img class="tree-img" src="avl_step_2_insert_20.png" alt="插入20">
+    </div>
+
+    <div class="step">
+        <div class="step-header">第3步：插入 10 <span class="status status-imbalance">LL 失衡</span></div>
+        <div class="rotate-box">
+            <strong>检测到 LL 型失衡！</strong><br>
+            插入路径：30 → 20 → 10（连续向左，形成左-左链）<br>
+            节点30的平衡因子 bf = 2（左子树高2，右子树高0）<br>
+            <strong>执行右旋（以节点30为旋转轴）</strong><br>
+            旋转后：20 成为新根，10 为左子，30 为右子
+        </div>
+        <img class="tree-img" src="avl_step_3_insert_10.png" alt="插入10">
+    </div>
+
+    <div class="step">
+        <div class="step-header">第4步：插入 25 <span class="status status-balanced">平衡</span></div>
+        <div class="info-box">25 &gt; 20 且 25 &lt; 30，作为节点30的左子节点。所有节点 bf 在 [-1,1] 范围内</div>
+        <img class="tree-img" src="avl_step_4_insert_25.png" alt="插入25">
+    </div>
+
+    <div class="step">
+        <div class="step-header">第5步：插入 40 <span class="status status-balanced">平衡</span></div>
+        <div class="info-box">40 &gt; 30，作为节点30的右子节点。树仍然平衡</div>
+        <img class="tree-img" src="avl_step_5_insert_40.png" alt="插入40">
+    </div>
+
+    <div class="step">
+        <div class="step-header">第6步：插入 35 <span class="status status-imbalance">RL 失衡</span></div>
+        <div class="rotate-box">
+            <strong>检测到 RL 型失衡！</strong><br>
+            插入路径：20 → 30 → 40 → 35（在右子树的左子树中插入）<br>
+            节点20的 bf = -2（右子树过高）<br>
+            节点30的 bf = -1，节点40的 bf = 1 <br>
+            <strong>先对节点40右旋，再对节点20左旋（双旋）</strong><br>
+            旋转后：30 成为新根，20 为左子（带25），40 为右子（带35）
+        </div>
+        <img class="tree-img" src="avl_step_6_insert_35.png" alt="插入35">
+    </div>
+
+    <div class="step">
+        <div class="step-header">第7步：插入 50 <span class="status status-balanced">平衡</span></div>
+        <div class="info-box">50 &gt; 40，作为节点40的右子节点。树仍然平衡</div>
+        <img class="tree-img" src="avl_step_7_insert_50.png" alt="插入50">
+    </div>
+
+    <h2>最终AVL树结构</h2>
+    <div class="tree-ascii">
+              30(bf=0)<br>
+             /        \<br>
+        20(bf=0)    40(bf=0)<br>
+        /    \       /    \<br>
+    10(bf=0) 25(bf=0) 35(bf=0) 50(bf=0)
+    </div>
+
+    <h2>最终结果验证</h2>
+    <div class="final-box">
+        <strong>最终AVL树的中序遍历：</strong><code>[10, 20, 25, 30, 35, 40, 50]</code><br><br>
+        <strong>验证结论：</strong>中序遍历结果严格递增，BST性质保持完好！<br>
+        所有节点的平衡因子均为 0，树高为 3，是一棵完美的平衡二叉搜索树。
+    </div>
+
+    <h2>旋转类型总结</h2>
+    <table>
+        <tr><th>失衡类型</th><th>触发条件</th><th>旋转操作</th><th>本题出现</th></tr>
+        <tr><td>LL</td><td>左子树的左子树插入</td><td>对失衡节点右旋</td><td>第3步（轴:30）</td></tr>
+        <tr><td>RR</td><td>右子树的右子树插入</td><td>对失衡节点左旋</td><td>未出现</td></tr>
+        <tr><td>LR</td><td>左子树的右子树插入</td><td>先左旋左子，再右旋失衡节点</td><td>未出现</td></tr>
+        <tr><td>RL</td><td>右子树的左子树插入</td><td>先右旋右子，再左旋失衡节点</td><td>第6步（轴:20）</td></tr>
+    </table>
+
+    <div style="text-align:center; margin-top:40px; color:#999; font-size:14px;">
+        AVL树构建与旋转实操 | 生成时间: 2026-06-21
+    </div>
+</body>
+</html>
